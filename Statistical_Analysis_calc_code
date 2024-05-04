@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Linear Regression Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #dataInput {
+            width: 80%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        #chart {
+            width: 80%;
+            margin: 20px auto;
+        }
+        #output {
+            width: 80%;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Linear Regression Calculator</h1>
+
+<div>
+    <label for="dataInput">Enter Data (comma-separated values for x and y):</label>
+    <textarea id="dataInput" rows="5" placeholder="Example: 1, 2\n2, 3\n3, 4\n4, 5"></textarea>
+    <br>
+    <button onclick="calculateLinearRegression()">Calculate Linear Regression</button>
+</div>
+
+<div id="output"></div>
+
+<div id="chart"></div>
+
+<script>
+    function calculateLinearRegression() {
+        // Get user input
+        const inputData = document.getElementById('dataInput').value;
+
+        // Parse the input data into an array of [x, y] pairs
+        const dataPairs = inputData.split('\n').map(pair => pair.split(',').map(value => parseFloat(value.trim())));
+
+        // Calculate linear regression
+        const n = dataPairs.length;
+        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+
+        for (const [x, y] of dataPairs) {
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumX2 += x ** 2;
+        }
+
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX ** 2);
+        const intercept = (sumY - slope * sumX) / n;
+
+        // Create a linear regression line
+        const regressionLine = dataPairs.map(([x]) => [x, slope * x + intercept]);
+
+        // Display the output and steps
+        const outputDiv = document.getElementById('output');
+        outputDiv.innerHTML = `<h2>Linear Regression Results:</h2>
+                               <p>Slope (m): ${slope}</p>
+                               <p>Intercept (b): ${intercept}</p>`;
+
+        // Create a scatter plot with the input data and the regression line
+        const chartDiv = document.getElementById('chart');
+        const plotData = [{
+            type: 'scatter',
+            mode: 'markers',
+            x: dataPairs.map(([x]) => x),
+            y: dataPairs.map(([, y]) => y),
+            name: 'Input Data'
+        }, {
+            type: 'scatter',
+            mode: 'lines',
+            x: regressionLine.map(([x]) => x),
+            y: regressionLine.map(([, y]) => y),
+            name: 'Linear Regression Line'
+        }];
+
+        const layout = {
+            title: 'Linear Regression',
+            xaxis: { title: 'X' },
+            yaxis: { title: 'Y' },
+        };
+
+        Plotly.newPlot(chartDiv, plotData, layout);
+    }
+</script>
+
+</body>
+</html>
