@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Box Plot Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #chart {
+            width: 80%;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Box Plot Generator</h1>
+
+<div>
+    <label for="dataInput">Enter Data (comma-separated values):</label>
+    <textarea id="dataInput" rows="5" cols="50" placeholder="Example: 1, 2, 3, 4, 5"></textarea>
+    <br>
+    <button onclick="generateBoxPlot()">Generate Box Plot</button>
+</div>
+
+<div id="chart"></div>
+
+<script>
+    function generateBoxPlot() {
+        // Get user input or use default values
+        const inputData = document.getElementById('dataInput').value || '1, 2, 3, 4, 5';
+
+        // Parse the input data into an array of numbers
+        const dataValues = inputData.split(',').map(value => parseFloat(value.trim()));
+
+        // Create a box plot
+        const plotData = [{
+            type: 'box',
+            y: dataValues,
+        }];
+
+        const layout = {
+            title: 'Box Plot',
+            yaxis: { title: 'Values' },
+        };
+
+        Plotly.newPlot('chart', plotData, layout);
+    }
+
+    // Generate box plot with default values on page load
+    generateBoxPlot();
+</script>
+
+</body>
+</html>
