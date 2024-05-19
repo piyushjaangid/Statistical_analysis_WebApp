@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistical Test Chooser</title>
+    <style>
+        #progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+        }
+
+        #progress-bar {
+            width: 0;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Statistical Test Chooser</h1>
+
+    <label for="data_type">Data Type:</label>
+    <select id="data_type">
+        <option value="Qualitative">Qualitative</option>
+        <option value="Quantitative">Quantitative</option>
+    </select>
+
+    <label for="num_vars">Number of Variables:</label>
+    <input type="number" id="num_vars" min="1" value="1">
+
+    <label for="var_types">Variable Types:</label>
+    <input type="text" id="var_types" placeholder="e.g., ('Quantitative', 'Qualitative')">
+
+    <label for="distribution">Distribution:</label>
+    <select id="distribution">
+        <option value="Normal">Normal</option>
+        <option value="Binomial">Binomial</option>
+        <option value="Poisson">Poisson</option>
+        <option value="Distribution-Free">Distribution-Free</option>
+    </select>
+
+    <label for="data_input">Data Input (comma-separated values):</label>
+    <input type="text" id="data_input" placeholder="e.g., 1,2,3,4,5">
+
+    <button id="submit">Submit</button>
+
+    <div id="progress-container">
+        <div id="progress-bar">0%</div>
+    </div>
+
+    <div id="result">
+        <h2>Result</h2>
+        <p id="test_name"></p>
+        <p id="test_result"></p>
+        <canvas id="plot" width="400" height="200"></canvas>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        const stat_tests = {
+            1: {'name': 'Z-test for a population mean', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Investigate the significance of the difference between an assumed population mean and a sample mean.'},
+            2: {'name': 'Z-test for two population means (variances known and equal)', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Investigate the significance of the difference between the means of two populations.'},
+            7: {'name': 't-test for a population mean', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Investigate the significance of the difference between an assumed population mean and a sample mean.'},
+            22: {'name': 'One-way ANOVA', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Test the null hypothesis that K samples came from K populations with the same mean.'},
+            44: {'name': 'χ2-test for independence', 'type': 'Categorical', 'distribution': 'Chi-square', 'use': 'Investigate the difference in frequency when classified by one attribute after classification by a second attribute.'},
+        };
+
+        function updateProgress(step, totalSteps, functionName) {
+            const progress = Math.round((step / totalSteps) * 100);
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-bar').innerText = `${progress}%`;
+            document.getElementById('message').innerText = `Step ${step} of ${totalSteps} completed. Proceeding to ${functionName}`;
+        }
+
+        function chooseTest(dataType, numVars, varTypes, distribution, data) {
+            updateProgress(1, 4, 'chooseTest');
+            if (numVars == 1) {
+                if (dataType === 'Qualitative') {
+                    if (new Set(data).size == 2) {
+                        return 4;  // Z-test for a proportion
+                    } else {
+                        return 37;  // Chi-square goodness of fit test
+                    }
+                } else if (dataType === 'Quantitative') {
+                    if (distribution === 'Normal') {
+                        return 7;  // t-test for a population mean
+                    } else {
+                        return 45;  // Wilcoxon signed-rank test
+                    }
+                }
+            } else if (numVars == 2) {
+                if (varTypes[0] === 'Qualitative' && varTypes[1] === 'Qualitative') {
+                    if (new Set(data[0]).size == 2 && new Set(data[1]).size == 2) {
+                        return 44;  // Chi-square test of independence
+                    } else {
+                        return 23;  // Test for two correlated proportions
+                    }
+                } else if ((varTypes[0] === 'Quantitative' && varTypes[1] === 'Qualitative') || 
+                           (varTypes[0] === 'Qualitative' && varTypes[1] === 'Quantitative')) {
+                    if (distribution === 'Normal') {
+                        return 85;  // Pearson correlation coefficient
+                    } else {
+                        return 86;  // Spearman’s rank correlation coefficient
+                    }
+                } else if (varTypes[0] === 'Quantitative' && varTypes[1] === 'Quantitative') {
+                    if (distribution === 'Normal') {
+                        return 85;  // Pearson correlation coefficient
+                    } else {
+                        return 86;  // Spearman’s rank correlation coefficient
+                    }
+                }
+            } else if (numVars > 2) {
+                if (dataType === 'Quantitative') {
+                    if (distribution === 'Normal') {
+                        if (varTypes === 'Independent') {
+                            return 22;  // One-way ANOVA
+                        } else {
+                            return 26;  // One-way ANOVA with unequal sample sizes
+                        }
+                    } else {
+                        return 48;  // Kruskal-Wallis test
+                    }
+                } else if (dataType === 'Qualitative') {
+                    return 44;  // Chi-square test of independence
+                }
+            }
+            return null;
+        }
+
+        function performTest(testId, data) {
+            updateProgress(2, 4, 'performTest');
+            // Here you would implement the actual statistical tests.
+            // For now, we will return mock results for demonstration.
+            if (testId == 1) {
+                return {stat: 1.96, pValue: 0.05};  // Mock result
+            } else if (testId == 2) {
+                return {stat: 2.58, pValue: 0.01};  // Mock result
+            } else if (testId == 7) {
+                return {stat: 2.0, pValue: 0.05};  // Mock result
+            } else if (testId == 22) {
+                return {fValue: 3.5, pValue: 0.04};  // Mock result
+            } else if (testId == 44) {
+                return {chi2: 10.2, pValue: 0.03};  // Mock result
+            }
+        }
+
+        function plotData(data) {
+            updateProgress(3, 4, 'plotData');
+            const ctx = document.getElementById('plot').getContext('2d');
+            const labels = Array.from({ length: data.length }, (_, i) => i + 1);
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: data.map((d, i) => ({
+                        label: `Dataset ${i + 1}`,
+                        data: d,
+                        backgroundColor: `rgba(75, 192, 192, 0.2)`,
+                        borderColor: `rgba(75, 192, 192, 1)`,
+                        borderWidth: 1
+                    }))
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('submit').addEventListener('click', function() {
+            updateProgress(0, 4, 'onSubmit');
+            const dataType = document.getElementById('data_type').value;
+            const numVars = parseInt(document.getElementById('num_vars').value);
+            const varTypes = document.getElementById('var_types').value ? eval(document.getElementById('var_types').value) : null;
+            const distribution = document.getElementById('distribution').value;
+            const dataInput = document.getElementById('data_input').value.split(',');
+
+            let data;
+            if (dataInput[0] === '') {
+                if (distribution === 'Normal') {
+                    data = Array.from({ length: numVars }, () => Array.from({ length: 30 }, () => Math.random() * 2 - 1));
+                } else if (distribution === 'Binomial') {
+                    data = Array.from({ length: numVars }, () => Array.from({ length: 30 }, () => Math.random() > 0.5 ? 1 : 0));
+                } else if (distribution === 'Poisson') {
+                    data = Array.from({ length: numVars }, () => Array.from({ length: 30 }, () => Math.round(Math.random() * 10)));
+                } else {
+                    data = Array.from({ length: numVars }, () => Array.from({ length: 30 }, () => Math.random()));
+                }
+            } else {
+                try {
+                    data = dataInput.map(d => parseFloat(d));
+                } catch (error) {
+                    document.getElementById('message').innerText = "Invalid data input. Please enter numeric values.";
+                    return;
+                }
+            }
+
+            const testId = chooseTest(dataType, numVars, varTypes, distribution, data);
+            if (testId) {
+                const result = performTest(testId, data);
+                plotData(data);
+                updateProgress(4, 4, 'Test completed');
+                document.getElementById('test_name').innerText = `Test Name: ${stat_tests[testId]['name']}`;
+                document.getElementById('test_result').innerText = `Result: ${JSON.stringify(result)}`;
+                document.getElementById('message').innerText = "Test performed successfully.";
+            } else {
+                document.getElementById('test_name').innerText = "No suitable test found.";
+                document.getElementById('test_result').innerText = "";
+                document.getElementById('plot').innerHTML = "";
+                document.getElementById('message').innerText = "No suitable test found.";
+            }
+        });
+    </script>
+</body>
+</html>
