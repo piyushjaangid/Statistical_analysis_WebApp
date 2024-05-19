@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistical Test Chooser</title>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <py-config>
+        packages = [
+            "numpy",
+            "scipy",
+            "matplotlib"
+        ]
+    </py-config>
+</head>
+<body>
+    <h1>Statistical Test Chooser</h1>
+
+    <label for="data_type">Data Type:</label>
+    <select id="data_type">
+        <option value="Qualitative">Qualitative</option>
+        <option value="Quantitative">Quantitative</option>
+    </select>
+
+    <label for="num_vars">Number of Variables:</label>
+    <input type="number" id="num_vars" min="1" value="1">
+
+    <label for="var_types">Variable Types:</label>
+    <input type="text" id="var_types" placeholder="e.g., ('Quantitative', 'Qualitative')">
+
+    <label for="distribution">Distribution:</label>
+    <select id="distribution">
+        <option value="Normal">Normal</option>
+        <option value="Binomial">Binomial</option>
+        <option value="Poisson">Poisson</option>
+        <option value="Distribution-Free">Distribution-Free</option>
+    </select>
+
+    <label for="data_input">Data Input (comma-separated values):</label>
+    <input type="text" id="data_input" placeholder="e.g., 1,2,3,4,5">
+
+    <button id="submit">Submit</button>
+
+    <div id="result">
+        <h2>Result</h2>
+        <p id="test_name"></p>
+        <p id="test_result"></p>
+        <div id="plot"></div>
+        <p id="message"></p>
+    </div>
+
+    <py-script>
+        import numpy as np
+        from scipy import stats
+        import matplotlib.pyplot as plt
+
+        stat_tests = {
+            1: {'name': 'Z-test for a population mean', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Investigate the significance of the difference between an assumed population mean and a sample mean.'},
+            2: {'name': 'Z-test for two population means (variances known and equal)', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Investigate the significance of the difference between the means of two populations.'},
+            7: {'name': 't-test for a population mean', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Investigate the significance of the difference between an assumed population mean and a sample mean.'},
+            22: {'name': 'One-way ANOVA', 'type': 'Quantitative', 'distribution': 'Normal', 'use': 'Test the null hypothesis that K samples came from K populations with the same mean.'},
+            44: {'name': 'χ2-test for independence', 'type': 'Categorical', 'distribution': 'Chi-square', 'use': 'Investigate the difference in frequency when classified by one attribute after classification by a second attribute.'},
+        }
+
+        def choose_test(data_type, num_vars, var_types, distribution, data):
+            if num_vars == 1:
+                if data_type == 'Qualitative':
+                    if len(set(data)) == 2:
+                        return 4  # Z-test for a proportion
+                    else:
+                        return 37  # Chi-square goodness of fit test
+                elif data_type == 'Quantitative':
+                    if distribution == 'Normal':
+                        return 7  # t-test for a population mean
+                    else:
+                        return 45  # Wilcoxon signed-rank test
+            elif num_vars == 2:
+                if var_types == ('Qualitative', 'Qualitative'):
+                    if len(set(data[0])) == 2 and len(set(data[1])) == 2:
+                        return 44  # Chi-square test of independence
+                    else:
+                        return 23  # Test for two correlated proportions
+                elif var_types == ('Quantitative', 'Qualitative') or var_types == ('Qualitative', 'Quantitative'):
+                    if distribution == 'Normal':
+                        return 85  # Pearson correlation coefficient
+                    else:
+                        return 86  # Spearman’s rank correlation coefficient
+                elif var_types == ('Quantitative', 'Quantitative'):
+                    if distribution == 'Normal':
+                        return 85  # Pearson correlation coefficient
+                    else:
+                        return 86  # Spearman’s rank correlation coefficient
+            elif num_vars > 2:
+                if data_type == 'Quantitative':
+                    if distribution == 'Normal':
+                        if var_types == 'Independent':
+                            return 22  # One-way ANOVA
+                        else:
+                            return 26  # One-way ANOVA with unequal sample sizes
+                    else:
+                        return 48  # Kruskal-Wallis test
+                elif data_type == 'Qualitative':
+                    return 44  # Chi-square test of independence
+            return None
+
+        def perform_test(test_id, data):
+            if test_id == 1:
+                # Perform Z-test for a population mean
+                return stats.ttest_1samp(data, popmean=0)
+            elif test_id == 2:
+                # Perform Z-test for two population means (variances known and equal)
+                return stats.ttest_ind(data[0], data[1], equal_var=True)
+            elif test_id == 7:
+                # Perform t-test for a population mean
+                return stats.ttest_1samp(data, popmean=0)
+            elif test_id == 22:
+                # Perform One-way ANOVA
+                return stats.f_oneway(*data)
+            elif test_id == 44:
+                # Perform Chi-square test of independence
+                return stats.chi2_contingency(data)
+
+        def plot_data(data):
+            plt.figure()
+            if isinstance(data[0], (list, np.ndarray)):
+                for d in data:
+                    plt.hist(d, bins=10, alpha=0.5)
+            else:
+                plt.hist(data, bins=10, alpha=0.5)
+            plt.title('Data Distribution')
+            plt.xlabel('Value')
+            plt.ylabel('Frequency')
+            plt.savefig('/mnt/data/plot.png')
+            return '/mnt/data/plot.png'
+
+        def on_submit(evt):
+            data_type = Element('data_type').value
+            num_vars = int(Element('num_vars').value)
+            var_types = eval(Element('var_types').value) if Element('var_types').value else None
+            distribution = Element('distribution').value
+            data_input = Element('data_input').value.split(',')
+
+            if data_input[0] == '':
+                if distribution == 'Normal':
+                    data = [np.random.normal(loc=0, scale=1, size=30) for _ in range(num_vars)]
+                elif distribution == 'Binomial':
+                    data = [np.random.binomial(n=1, p=0.5, size=30) for _ in range(num_vars)]
+                elif distribution == 'Poisson':
+                    data = [np.random.poisson(lam=1, size=30) for _ in range(num_vars)]
+                else:
+                    data = [np.random.uniform(low=0, high=1, size=30) for _ in range(num_vars)]
+            else:
+                try:
+                    data = np.array([float(i) for i in data_input])
+                except ValueError:
+                    Element('message').element.innerHTML = "Invalid data input. Please enter numeric values."
+                    return
+
+            test_id = choose_test(data_type, num_vars, var_types, distribution, data)
+            if test_id:
+                result = perform_test(test_id, data)
+                plot_path = plot_data(data)
+                Element('test_name').element.innerHTML = f"Test Name: {stat_tests[test_id]['name']}"
+                Element('test_result').element.innerHTML = f"Result: {result}"
+                Element('plot').element.innerHTML = f'<img src="{plot_path}" alt="Data Distribution">'
+                Element('message').element.innerHTML = "Test performed successfully."
+            else:
+                Element('test_name').element.innerHTML = "No suitable test found."
+                Element('test_result').element.innerHTML = ""
+                Element('plot').element.innerHTML = ""
+                Element('message').element.innerHTML = "No suitable test found."
+
+        Element('submit').element.addEventListener('click', on_submit)
+    </py-script>
+</body>
+</html>
