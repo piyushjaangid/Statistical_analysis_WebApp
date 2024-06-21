@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistical Test Selector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+        }
+        .dropdown, .table-container, .result {
+            margin-bottom: 15px;
+        }
+        .dropdown select, .table-container input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.5.0/math.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Statistical Test Selector</h2>
+        <div class="dropdown">
+            <label for="num-variables">How many variables?</label>
+            <select id="num-variables" onchange="updateVariables()">
+                <option value="">Select</option>
+                <option value="1">1 Variable</option>
+                <option value="2">2 Variables</option>
+                <option value="3">More than 2 Variables</option>
+            </select>
+        </div>
+        <div id="variable-options"></div>
+        <div class="table-container">
+            <table id="input-table">
+                <thead>
+                    <tr>
+                        <th>Sr. No.</th>
+                        <th>Variable 1</th>
+                        <th>Variable 2</th>
+                        <th>Variable 3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td><input type="text" id="var1-row1"></td>
+                        <td><input type="text" id="var2-row1"></td>
+                        <td><input type="text" id="var3-row1"></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td><input type="text" id="var1-row2"></td>
+                        <td><input type="text" id="var2-row2"></td>
+                        <td><input type="text" id="var3-row2"></td>
+                    </tr>
+                    <!-- Add more rows as needed -->
+                </tbody>
+            </table>
+        </div>
+        <button onclick="runAnalysis()">Run Analysis</button>
+        <div class="result" id="result"></div>
+        <div id="calculation-details"></div>
+    </div>
+
+    <script>
+        function updateVariables() {
+            const numVariables = document.getElementById('num-variables').value;
+            const variableOptions = document.getElementById('variable-options');
+            variableOptions.innerHTML = '';
+
+            if (numVariables === '1') {
+                variableOptions.innerHTML = `
+                    <div class="dropdown">
+                        <label for="variable-type">Is the variable qualitative or quantitative?</label>
+                        <select id="variable-type" onchange="selectOneVariableTest()">
+                            <option value="">Select</option>
+                            <option value="qualitative">Qualitative</option>
+                            <option value="quantitative">Quantitative</option>
+                        </select>
+                    </div>
+                `;
+            } else if (numVariables === '2') {
+                variableOptions.innerHTML = `
+                    <div class="dropdown">
+                        <label for="variables-type">What are the types of the two variables?</label>
+                        <select id="variables-type" onchange="selectTwoVariablesType()">
+                            <option value="">Select</option>
+                            <option value="both-qualitative">Both Qualitative</option>
+                            <option value="one-quant-one-qual">One Quantitative and One Qualitative</option>
+                            <option value="both-quantitative">Both Quantitative</option>
+                        </select>
+                    </div>
+                `;
+            } else if (numVariables === '3') {
+                variableOptions.innerHTML = `
+                    <div class="dropdown">
+                        <label for="dependent-variable">Is the dependent variable qualitative or quantitative?</label>
+                        <select id="dependent-variable" onchange="selectMoreThanTwoVariablesTest()">
+                            <option value="">Select</option>
+                            <option value="quantitative">Quantitative</option>
+                            <option value="qualitative">Qualitative</option>
+                        </select>
+                    </div>
+                `;
+            }
+        }
+
+        function selectOneVariableTest() {
+            const variableType = document.getElementById('variable-type').value;
+            let result = '';
+
+            if (variableType === 'qualitative') {
+                result = `
+                    <div class="dropdown">
+                        <label for="qualitative-groups">How many groups?</label>
+                        <select id="qualitative-groups" onchange="displayOneVariableQualitativeTest()">
+                            <option value="">Select</option>
+                            <option value="2">2 Groups</option>
+                            <option value="more">More than 2 Groups</option>
+                        </select>
+                    </div>
+                `;
+            } else if (variableType === 'quantitative') {
+                result = `
+                    <div class="dropdown">
+                        <label for="quantitative-type">Is it parametric or nonparametric?</label>
+                        <select id="quantitative-type" onchange="displayOneVariableQuantitativeTest()">
+                            <option value="">Select</option>
+                            <option value="parametric">Parametric</option>
+                            <option value="nonparametric">Nonparametric</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            document.getElementById('variable-options').innerHTML += result;
+        }
+
+        function displayOneVariableQualitativeTest() {
+            const qualitativeGroups = document.getElementById('qualitative-groups').value;
+            let test = '';
+
+            if (qualitativeGroups === '2') {
+                test = 'One-proportion test';
+            } else if (qualitativeGroups === 'more') {
+                test = 'Chi-square goodness of fit test';
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function displayOneVariableQuantitativeTest() {
+            const quantitativeType = document.getElementById('quantitative-type').value;
+            let test = '';
+
+            if (quantitativeType === 'parametric') {
+                test = "One-sample Student's t-test";
+            } else if (quantitativeType === 'nonparametric') {
+                test = 'One-sample Wilcoxon test';
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function selectTwoVariablesType() {
+            const variablesType = document.getElementById('variables-type').value;
+            let result = '';
+
+            if (variablesType === 'both-qualitative') {
+                result = `
+                    <div class="dropdown">
+                        <label for="qualitative-groups-2">Are there 2 groups for each variable?</label>
+                        <select id="qualitative-groups-2" onchange="displayTwoQualitativeVariablesTest()">
+                            <option value="">Select</option>
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                        </select>
+                    </div>
+                `;
+            } else if (variablesType === 'one-quant-one-qual') {
+                result = `
+                    <div class="dropdown">
+                        <label for="quant-qual-groups">Number of groups/samples to compare?</label>
+                        <select id="quant-qual-groups" onchange="displayQuantQualVariablesTest()">
+                            <option value="">Select</option>
+                            <option value="2">2 Groups</option>
+                            <option value="more">More than 2 Groups</option>
+                        </select>
+                    </div>
+                `;
+            } else if (variablesType === 'both-quantitative') {
+                result = `
+                    <div class="dropdown">
+                        <label for="quantitative-type-2">Is it parametric or nonparametric?</label>
+                        <select>
+                                                    <option value="">Select</option>
+                            <option value="parametric">Parametric</option>
+                            <option value="nonparametric">Nonparametric</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            document.getElementById('variable-options').innerHTML += result;
+        }
+
+        function displayTwoQualitativeVariablesTest() {
+            const qualitativeGroups2 = document.getElementById('qualitative-groups-2').value;
+            let test = '';
+
+            if (qualitativeGroups2 === 'yes') {
+                test = 'Chi-square test of independence';
+            } else if (qualitativeGroups2 === 'no') {
+                test = 'Fisher\'s exact test';
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function displayQuantQualVariablesTest() {
+            const quantQualGroups = document.getElementById('quant-qual-groups').value;
+            let test = '';
+
+            if (quantQualGroups === '2') {
+                test = `
+                    <div class="dropdown">
+                        <label for="paired-independent">Are the samples paired or independent?</label>
+                        <select id="paired-independent" onchange="displayQuantQualTwoGroupsTest()">
+                            <option value="">Select</option>
+                            <option value="paired">Paired</option>
+                            <option value="independent">Independent</option>
+                        </select>
+                    </div>
+                `;
+            } else if (quantQualGroups === 'more') {
+                test = `
+                    <div class="dropdown">
+                        <label for="paired-independent-more">Are the samples paired or independent?</label>
+                        <select id="paired-independent-more" onchange="displayQuantQualMoreGroupsTest()">
+                            <option value="">Select</option>
+                            <option value="paired">Paired</option>
+                            <option value="independent">Independent</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            document.getElementById('variable-options').innerHTML += test;
+        }
+
+        function displayQuantQualTwoGroupsTest() {
+            const pairedIndependent = document.getElementById('paired-independent').value;
+            let test = '';
+
+            if (pairedIndependent === 'paired') {
+                test = `
+                    <div class="dropdown">
+                        <label for="parametric-nonparametric">Is it parametric or nonparametric?</label>
+                        <select id="parametric-nonparametric" onchange="displayQuantQualTwoGroupsPairedTest()">
+                            <option value="">Select</option>
+                            <option value="parametric">Parametric</option>
+                            <option value="nonparametric">Nonparametric</option>
+                        </select>
+                    </div>
+                `;
+            } else if (pairedIndependent === 'independent') {
+                test = `
+                    <div class="dropdown">
+                        <label for="parametric-nonparametric-independent">Is it parametric or nonparametric?</label>
+                        <select id="parametric-nonparametric-independent" onchange="displayQuantQualTwoGroupsIndependentTest()">
+                            <option value="">Select</option>
+                            <option value="parametric">Parametric</option>
+                            <option value="nonparametric">Nonparametric</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            document.getElementById('variable-options').innerHTML += test;
+        }
+
+        function displayQuantQualTwoGroupsPairedTest() {
+            const parametricNonparametric = document.getElementById('parametric-nonparametric').value;
+            let test = '';
+
+            if (parametricNonparametric === 'parametric') {
+                test = "Student's t-test for paired samples";
+            } else if (parametricNonparametric === 'nonparametric') {
+                test = 'Wilcoxon signed-rank test';
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function displayQuantQualTwoGroupsIndependentTest() {
+            const parametricNonparametricIndependent = document.getElementById('parametric-nonparametric-independent').value;
+            let test = '';
+
+            if (parametricNonparametricIndependent === 'parametric') {
+                test = `
+                    <div class="dropdown">
+                        <label for="equal-variances">Are population variances equal?</label>
+                        <select id="equal-variances" onchange="displayQuantQualTwoGroupsIndependentParametricTest()">
+                            <option value="">Select</option>
+                            <option value="equal">Equal</option>
+                            <option value="unequal">Unequal</option>
+                        </select>
+                    </div>
+                `;
+            } else if (parametricNonparametricIndependent === 'nonparametric') {
+                test = 'Mann-Whitney U test';
+                document.getElementById('result').innerText = `Recommended Test: ${test}`;
+            }
+
+            document.getElementById('variable-options').innerHTML += test;
+        }
+
+        function displayQuantQualTwoGroupsIndependentParametricTest() {
+            const equalVariances = document.getElementById('equal-variances').value;
+            let test = '';
+
+            if (equalVariances === 'equal') {
+                test = "Student's t-test for 2 independent samples";
+            } else if (equalVariances === 'unequal') {
+                test = "Welch's t-test for 2 independent samples";
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function displayQuantQualMoreGroupsTest() {
+            const pairedIndependentMore = document.getElementById('paired-independent-more').value;
+            let test = '';
+
+            if (pairedIndependentMore === 'paired') {
+                test = `
+                    <div class="dropdown">
+                        <label for="parametric-nonparametric-more">Is it parametric or nonparametric?</label>
+                        <select id="parametric-nonparametric-more" onchange="displayQuantQualMoreGroupsPairedTest()">
+                            <option value="">Select</option>
+                            <option value="parametric">Parametric</option>
+                            <option value="nonparametric">Nonparametric</option>
+                        </select>
+                    </div>
+                `;
+            } else if (pairedIndependentMore === 'independent') {
+                test = `
+                    <div class="dropdown">
+                        <label for="parametric-nonparametric-independent-more">Is it parametric or nonparametric?</label>
+                        <select id="parametric-nonparametric-independent-more" onchange="displayQuantQualMoreGroupsIndependentTest()">
+                            <option value="">Select</option>
+                            <option value="parametric">Parametric</option>
+                            <option value="nonparametric">Nonparametric</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            document.getElementById('variable-options').innerHTML += test;
+        }
+
+        function displayQuantQualMoreGroupsPairedTest() {
+            const parametricNonparametricMore = document.getElementById('parametric-nonparametric-more').value;
+            let test = '';
+
+            if (parametricNonparametricMore === 'parametric') {
+                test = 'Repeated measures ANOVA';
+            } else if (parametricNonparametricMore === 'nonparametric') {
+                test = 'Friedman test';
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function displayQuantQualMoreGroupsIndependentTest() {
+            const parametricNonparametricIndependentMore = document.getElementById('parametric-nonparametric-independent-more').value;
+            let test = '';
+
+            if (parametricNonparametricIndependentMore === 'parametric') {
+                test = `
+                    <div class="dropdown">
+                        <label for="equal-variances-more">Are population variances equal?</label>
+                        <select id="equal-variances-more" onchange="displayQuantQualMoreGroupsIndependentParametricTest()">
+                            <option value="">Select</option>
+                            <option value="equal">Equal</option>
+                            <option value="unequal">Unequal</option>
+                        </select>
+                    </div>
+                `;
+            } else if (parametricNonparametricIndependentMore === 'nonparametric') {
+                test = 'Kruskal-Wallis test';
+                document.getElementById('result').innerText = `Recommended Test: ${test}`;
+            }
+
+            document.getElementById('variable-options').innerHTML += test;
+        }
+
+        function displayQuantQualMoreGroupsIndependentParametricTest() {
+            const equalVariancesMore = document.getElementById('equal-variances-more').value;
+            let test = '';
+
+            if (equalVariancesMore === 'equal') {
+                test = 'One-way ANOVA';
+            } else if (equalVariancesMore === 'unequal') {
+                test = "Welch's ANOVA";
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function displayTwoQuantitativeVariablesTest() {
+            const quantitativeType2 = document.getElementById('quantitative-type-2').value;
+            let test = '';
+
+            if (quantitativeType2 === 'parametric') {
+                test = 'Pearson correlation';
+            } else if (quantitativeType2 === 'nonparametric') {
+                test = "Spearman's rank correlation";
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function selectMoreThanTwoVariablesTest() {
+            const dependentVariable = document.getElementById('dependent-variable').value;
+            let test = '';
+
+            if (dependentVariable === 'quantitative') {
+                test = 'Multiple linear regression';
+            } else if (dependentVariable === 'qualitative') {
+                test = `
+                    <div class="dropdown">
+                        <label for="qualitative-groups-more">Are there 2 groups or more than 2 groups?</label>
+                        <select id="qualitative-groups-more" onchange="displayMoreThanTwoQualitativeTest()">
+                            <option value="">Select</option>
+                            <option value="2">2 Groups</option>
+                            <option value="more">More than 2 Groups</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            document.getElementById('variable-options').innerHTML += test;
+        }
+
+        function displayMoreThanTwoQualitativeTest() {
+            const qualitativeGroupsMore = document.getElementById('qualitative-groups-more').value;
+            let test = '';
+
+            if (qualitativeGroupsMore === '2') {
+                test = 'Binary logistic regression';
+            } else if (qualitativeGroupsMore === 'more') {
+                test = 'Multinomial logistic regression';
+            }
+
+            document.getElementById('result').innerText = `Recommended Test: ${test}`;
+        }
+
+        function runAnalysis() {
+            const numVariables = document.getElementById('num-variables').value;
+            const resultElement = document.getElementById('result');
+            const calculationDetails = document.getElementById('calculation-details');
+            let test = '';
+
+            if (numVariables === '1') {
+                const variableType = document.getElementById('variable-type').value;
+                if (variableType === 'qualitative') {
+                    const qualitativeGroups = document.getElementById('qualitative-groups').value;
+                    if (qualitativeGroups === '2') {
+                        test = 'One-proportion test';
+                        // Perform One-proportion test
+                    } else if (qualitativeGroups === 'more') {
+                        test = 'Chi-square goodness of fit test';
+                        // Perform Chi-square goodness of fit test
+                    }
+                } else if (variableType === 'quantitative') {
+                    const quantitativeType = document.getElementById('quantitative-type').value;
+                    if (quantitativeType === 'parametric') {
+                        test = "One-sample Student's t-test";
+                        // Perform One-sample Student's t-test
+                    } else if (quantitativeType === 'nonparametric') {
+                        test = 'One-sample Wilcoxon test';
+                        // Perform One-sample Wilcoxon test
+                    }
+                }
+            } else if (numVariables === '2') {
+                const variablesType = document.getElementById('variables-type').value;
+                if (variablesType === 'both-qualitative') {
+                    const qualitativeGroups2 = document.getElementById('qualitative-groups-2').value;
+                    if (qualitativeGroups2 === 'yes') {
+                        test = 'Chi-square test of independence';
+                        // Perform Chi-square test of independence
+                    } else if (qualitativeGroups2 === 'no') {
+                        test = "Fisher's exact test";
+                        // Perform Fisher's exact test
+                    }
+                } else if (variablesType === 'one-quant-one-qual') {
+                    const quantQualGroups = document.getElementById('quant-qual-groups').value;
+                    if (quantQualGroups === '2') {
+                        const pairedIndependent = document.getElementById('paired-independent').value;
+                        if (pairedIndependent === 'paired') {
+                            const parametricNonparametric = document.getElementById('parametric-nonparametric').value;
+                            if (parametricNonparametric === 'parametric') {
+                                test = "Student's t-test for paired samples";
+                                // Perform Student's t-test for paired samples
+                            } else if (parametricNonparametric === 'nonparametric') {
+                                test = 'Wilcoxon signed-rank test';
+                                // Perform Wilcoxon signed-rank test
+                            }
+                        } else if (pairedIndependent === 'independent') {
+                            const parametricNonparametricIndependent = document.getElementById('parametric-nonparametric-independent').value;
+                            if (parametricNonparametricIndependent === 'parametric') {
+                                const equalVariances = document.getElementById('equal-variances').value;
+                                if (equalVariances === 'equal') {
+                                    test = "Student's t-test for 2 independent samples";
+                                    // Perform Student's t-test for 2 independent samples
+                                } else if (equalVariances === 'unequal') {
+                                    test = "Welch's t-test for 2 independent samples";
+                                    // Perform Welch's t-test for 2 independent samples
+                                }
+                            } else if (parametricNonparametricIndependent === 'nonparametric') {
+                                test = 'Mann-Whitney U test';
+                                // Perform Mann-Whitney U test
+                            }
+                        }
+                    } else if (quantQualGroups === 'more') {
+                        const pairedIndependentMore = document.getElementById('paired-independent-more').value;
+                        if (pairedIndependentMore === 'paired') {
+                            const parametricNonparametricMore = document.getElementById('parametric-nonparametric-more').value;
+                            if (parametricNonparametricMore === 'parametric') {
+                                test = 'Repeated measures ANOVA';
+                                // Perform Repeated measures ANOVA
+                            } else if (parametricNonparametricMore === 'nonparametric') {
+                                test = 'Friedman test';
+                                // Perform Friedman test
+                            }
+                        } else if (pairedIndependentMore === 'independent') {
+                            const parametricNonparametricIndependentMore = document.getElementById('parametric-nonparametric-independent-more').value;
+                            if (parametricNonparametricIndependentMore === 'parametric') {
+                                const equalVariancesMore = document.getElementById('equal-variances-more').value;
+                                if (equalVariancesMore === 'equal') {
+                                    test = 'One-way ANOVA';
+                                    // Perform One-way ANOVA
+                                } else if (equalVariancesMore === 'unequal') {
+                                    test = "Welch's ANOVA";
+                                    // Perform Welch's ANOVA
+                                }
+                            } else if (parametricNonparametricIndependentMore === 'nonparametric') {
+                                test = 'Kruskal-Wallis test';
+                                // Perform Kruskal-Wallis test
+                            }
+                        }
+                    }
+                } else if (variablesType === 'both-quantitative') {
+                    const quantitativeType2 = document.getElementById('quantitative-type-2').value;
+                    if (quantitativeType2 === 'parametric') {
+                        test = 'Pearson correlation';
+                        // Perform Pearson correlation
+                    } else if (quantitativeType2 === 'nonparametric') {
+                        test = "Spearman's rank correlation";
+                        // Perform Spearman's rank correlation
+                    }
+                }
+            } else if (numVariables === '3') {
+                const dependentVariable = document.getElementById('dependent-variable').value;
+                if (dependentVariable === 'quantitative') {
+                    test = 'Multiple linear regression';
+                    // Perform Multiple linear regression
+                } else if (dependentVariable === 'qualitative') {
+                    const qualitativeGroupsMore = document.getElementById('qualitative-groups-more').value;
+                    if (qualitativeGroupsMore === '2') {
+                        test = 'Binary logistic regression';
+                        // Perform Binary logistic regression
+                    } else if (qualitativeGroupsMore === 'more') {
+                        test = 'Multinomial logistic regression';
+                        // Perform Multinomial logistic regression
+                    }
+                }
+            }
+
+            resultElement.innerText = `Recommended Test: ${test}`;
+            calculationDetails.innerHTML = `Detailed calculations and formulas will be shown here for the selected test: ${test}`;
+        }
+    </script>
+</body>
+</html>
+
